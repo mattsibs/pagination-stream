@@ -9,19 +9,19 @@ This repo is an example of using the interface for loading paginated data.
 In order to use the utility, you need to define a `PageFetcher<T>` which defines how to load 
 a paged result for a given offset and pagesize.
 
-(Note the current interface for page uses the Spring Data object out of convenience)
+(Note the current interface for page uses the Spring Data object out of convenience, this will be
+made generic in the future release so adapters can bridge the utilities requirements)
 
 ### Example
 ```java
 public class Main {
     
-    
     public static void main(final String... args) {
         ...
         pagedStream(userRepository.pageFetcher(), 10, 100)
-            .map(User::getName)
-            .filter(name -> name.startsWith("A"))
-            .count();
+            .parallel()
+            .map(HeavyLifting::aDifficultCalculation)
+            .forEach(notifier::notify);
     }
 }
 ```

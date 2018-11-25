@@ -42,7 +42,7 @@ public class PageSpliterator<T> implements Spliterator<T> {
     }
 
     /**
-     * Attempt to split the spliterator. Result set is explicitly defined as paged buckets
+     * Attempt to split the spliterator. This is easy as by definition the result set is defined as paged buckets
      *
      * If the stream is run in parallel the spliterator will be split as below
      * (4 queries for a given pageSize/count, top row is page number)
