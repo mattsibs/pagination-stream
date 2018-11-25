@@ -61,6 +61,13 @@ public class ExampleExportIT {
         assertThat(export)
                 .hasSize(100);
 
+        assertThat(export)
+                .containsOnlyOnce(
+                        "AndroidInstance1,INDEX_1,2001-01-02",
+                        "AndroidInstance87,INDEX_87,2001-03-29",
+                        "AndroidInstance99,INDEX_99,2001-04-10"
+                );
+
     }
 
     @Test
@@ -83,6 +90,16 @@ public class ExampleExportIT {
 
         assertThat(export)
                 .hasSize(100);
+
+        assertThat(export)
+                .startsWith(
+                        "AndroidInstance0,INDEX_0,2001-01-01",
+                        "AndroidInstance1,INDEX_1,2001-01-02",
+                        "AndroidInstance2,INDEX_2,2001-01-03")
+                .endsWith(
+                        "AndroidInstance97,INDEX_97,2001-04-08",
+                        "AndroidInstance98,INDEX_98,2001-04-09",
+                        "AndroidInstance99,INDEX_99,2001-04-10");
 
     }
 
