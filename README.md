@@ -2,7 +2,7 @@
 Java 8 Lazy Stream For Paginated Result Set.
 
 Java Streams have a great api and provide the ability to lazily define loads an operations.
-Creating your own lazy loaded stream is easy with the `Spliterator<T>` intergace.
+Creating your own lazy loaded stream is easy with the `Spliterator<T>` interface.
 This repo is an example of using the interface for loading paginated data.
 
 ## Usage
