@@ -10,7 +10,7 @@ In order to use the utility, you need to define a `PageFetcher<T>` which defines
 a paged result for a given offset and pagesize.
 
 (Note the current interface for page uses the Spring Data object out of convenience, this will be
-made generic in the future release so adapters can bridge the utilities requirements)
+made generic in the future release so adapters can bridge the utility's requirements)
 
 ### Example
 ```java
