@@ -104,6 +104,55 @@ public class PagedStreamIT {
                 .isEqualTo(1);
     }
 
+
+    @Test
+    public void prefetchPageStream_parallel_IteratesOverWholeResultSet() throws Exception {
+        List<User> testUsers = createTestUsers(100);
+
+        Stream<User> userStream = PaginationUtils.prefetchPageStream(userRepository.pageFetcher(), 7);
+
+        Set<Thread> threads = Sets.newHashSet();
+        List<Long> streamedUserIds = userStream.parallel()
+                .peek(user -> threads.add(Thread.currentThread()))
+                .map(User::getId)
+                .collect(toList());
+
+        System.out.println("Concurrency: " + threads.size());
+
+        assertThat(streamedUserIds)
+                .containsExactlyInAnyOrderElementsOf(
+                        testUsers.stream()
+                                .map(User::getId)
+                                .collect(toList()));
+
+        assertThat(threads.size()).isGreaterThan(1);
+    }
+
+    @Test
+    public void prefetchPageStream_sequential_IteratesOverWholeResultSet() throws Exception {
+        List<User> testUsers = createTestUsers(100);
+
+        Stream<User> userStream = PaginationUtils.prefetchPageStream(userRepository.pageFetcher(), 7);
+
+        Set<Thread> threads = Sets.newHashSet();
+
+        List<Long> streamedUserIds = userStream.sequential()
+                .peek(user -> threads.add(Thread.currentThread()))
+                .map(User::getId)
+                .collect(toList());
+
+        System.out.println("Concurrency: " + threads.size());
+
+        assertThat(streamedUserIds)
+                .containsExactlyInAnyOrderElementsOf(
+                        testUsers.stream()
+                                .map(User::getId)
+                                .collect(toList()));
+
+        assertThat(threads.size()).isEqualTo(1);
+
+    }
+
     private List<User> createTestUsers(final int count) {
         List<User> users = IntStream.range(0, count)
                 .boxed()

@@ -46,4 +46,18 @@ public final class PaginationUtils {
         return StreamSupport.stream(spliterator, PAGED_SPLITERATOR_CHARACTERISTICS, false);
     }
 
+
+    /**
+     * Stream over paginated result set without having to know the size of the result set beforehand.
+     * First page is obtained when attempting to split.
+     *
+     * @param fetcher  Interface for retrieving pages
+     * @param pageSize Size of pages to be queries
+     * @param <T>      Generic type returned by page fetched
+     * @return Stream of generic type T
+     */
+    public static <T> Stream<T> prefetchPageStream(final PageFetcher<T> fetcher, final int pageSize) {
+        PreFetchPageSpliterator<T> spliterator = PreFetchPageSpliterator.create(pageSize, fetcher);
+        return StreamSupport.stream(spliterator, false);
+    }
 }
