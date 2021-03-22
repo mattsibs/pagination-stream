@@ -44,15 +44,15 @@ public class PageSpliterator<P, T> implements Spliterator<T> {
      * @param pageSize size of page
      * @param pageFetcher function given page number returns a page object of type P
      * @param itemFetcher function given a page object of type P return a list of type T
-     * @param <P>
-     * @param <T>
+     * @param <P> page object type
+     * @param <T> item type
      * @return created spliterator
      */
-    static <P, T> PageSpliterator<P, T> create(final int count, final int pageSize, final BiFunction<Integer, Integer, P> pageFetcher, Function<P, List<T>> itemFetcher) {
+    public static <P, T> PageSpliterator<P, T> create(final int count, final int pageSize, final BiFunction<Integer, Integer, P> pageFetcher, Function<P, List<T>> itemFetcher) {
         return PageSpliterator.create(0, count, pageSize, pageFetcher, itemFetcher);
     }
 
-    static <P, T> PageSpliterator<P, T> create(final int pageNumber, final int count, final int pageSize, final BiFunction<Integer, Integer, P> pageFetcher,Function<P, List<T>> itemFetcher) {
+    public static <P, T> PageSpliterator<P, T> create(final int pageNumber, final int count, final int pageSize, final BiFunction<Integer, Integer, P> pageFetcher,Function<P, List<T>> itemFetcher) {
         return new PageSpliterator<>(pageNumber, count, pageSize, pageFetcher, itemFetcher);
     }
 

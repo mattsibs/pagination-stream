@@ -25,7 +25,7 @@ public class Main {
     
     public static void main(final String... args) {
         //...
-        pagedStream(userRepository.pageFetcher(), 10, 100)
+       PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, UserRepository.pageFetcher(), UserRepository.itemFetcher()).stream()
             .parallel()
             .map(HeavyLifting::aDifficultCalculation)
             .forEach(notifier::notify);

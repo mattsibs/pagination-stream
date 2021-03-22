@@ -1,7 +1,7 @@
 package com.blog.stream.pagination.demo;
 
 
-import com.blog.stream.pagination.PaginationUtils;
+import com.blog.stream.pagination.PageSpliterator;
 import com.blog.stream.pagination.fixture.IntegrationTestApplication;
 import com.blog.stream.pagination.fixture.User;
 import com.blog.stream.pagination.fixture.UserRepository;
@@ -20,7 +20,6 @@ import java.nio.file.Files;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,6 +27,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = IntegrationTestApplication.class)
 public class ExampleExportIT {
+
+    public static final int ITEM_COUNT = 100;
+    public static final int PAGE_SIZE = 7;
 
     @Rule
     public final TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -42,14 +44,13 @@ public class ExampleExportIT {
 
     @Test
     public void example_parallel_ExportingWithLazyPaginatedStreams() throws Exception {
-        createTestUsers(100);
-        Stream<User> userStream = PaginationUtils.pagedStream(userRepository.pageFetcher(), userRepository.itemFetcher(), 7, 100);
+        createTestUsers(ITEM_COUNT);
 
         File file = temporaryFolder.newFile();
         try (FileOutputStream outputStream = new FileOutputStream(file)) {
             Exporter exporter = Exporter.create(outputStream);
 
-            userStream
+            PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemFetcher()).stream()
                     .parallel()
                     .map(UserExport::new)
                     .forEach(exporter::exportUser);
@@ -70,14 +71,13 @@ public class ExampleExportIT {
 
     @Test
     public void example_sequential_ExportingWithLazyPaginatedStreams() throws Exception {
-        createTestUsers(100);
-        Stream<User> userStream = PaginationUtils.pagedStream(userRepository.pageFetcher(), userRepository.itemFetcher(), 7, 100);
+        createTestUsers(ITEM_COUNT);
 
         File file = temporaryFolder.newFile();
         try (FileOutputStream outputStream = new FileOutputStream(file)) {
             Exporter exporter = Exporter.create(outputStream);
 
-            userStream
+            PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemFetcher()).stream()
                     .sequential()
                     .map(UserExport::new)
                     .forEach(exporter::exportUser);

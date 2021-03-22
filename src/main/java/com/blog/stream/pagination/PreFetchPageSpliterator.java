@@ -5,6 +5,8 @@ import java.util.Spliterator;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class PreFetchPageSpliterator<P, T> implements Spliterator<T> {
 
@@ -20,7 +22,7 @@ public class PreFetchPageSpliterator<P, T> implements Spliterator<T> {
 
     private List<T> preFetchedPage;
 
-    PreFetchPageSpliterator(
+    public PreFetchPageSpliterator(
             final int pageNumber,
             final int pageSize,
             final BiFunction<Integer, Integer, P> pageFetcher,
@@ -34,7 +36,7 @@ public class PreFetchPageSpliterator<P, T> implements Spliterator<T> {
         this.totalPagesExtractor = totalPagesExtractor;
     }
 
-    static <P, R> PreFetchPageSpliterator<P, R> create(final int pageSize, final BiFunction<Integer, Integer, P> pageFetcher, Function<P, List<R>> itemFetcher, Function<P, Integer> totalPagesExtractor) {
+    public static <P, R> PreFetchPageSpliterator<P, R> create(final int pageSize, final BiFunction<Integer, Integer, P> pageFetcher, Function<P, List<R>> itemFetcher, Function<P, Integer> totalPagesExtractor) {
         return new PreFetchPageSpliterator<>(0, pageSize, pageFetcher, itemFetcher, totalPagesExtractor);
     }
 
@@ -132,6 +134,16 @@ public class PreFetchPageSpliterator<P, T> implements Spliterator<T> {
             return ORDERED | IMMUTABLE | SIZED;
         }
 
+    }
+
+    /**
+     * Create lazily loaded stream for paginated queries. Stream type returned is sequential by default
+     * performing pagedStream(...).parallel() will provided parallel stream.
+     *
+     * @return Stream of generic type T
+     */
+    public Stream<T> stream() {
+        return StreamSupport.stream(this, false);
     }
 
     static class PreFetchedChildPageSpliterator<T> implements Spliterator<T> {
