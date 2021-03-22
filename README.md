@@ -38,11 +38,22 @@ Below is an example of a `PageFetcher` using spring data
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    default PageFetcher<User> pageFetcher() {
-        return (offset, pageSize) -> {
-            PageRequest pageable = PageRequest.of(offset, pageSize);
-            return findAll(pageable);
-        };
-    }
+    //fetch page from repository
+   default BiFunction<Integer, Integer, PageRequest> pageFetcher() {
+      return (pageNumber, pageSize) -> {
+         LOG.info("Finding page for pageNumber {} and size {}", pageNumber, pageSize);
+         return PageRequest.of(pageNumber, pageSize);
+      };
+   }
+
+   //fetch items from page response
+   default Function<PageRequest, List<User>> itemFetcher() {
+      return (pageable) -> findAll(pageable).get().collect(Collectors.toList());
+   }
+
+   //fetch page count from page response -- for prefetch api
+   default Function<PageRequest, Integer> pageCountExtractor() {
+      return (pageable) -> findAll(pageable).getTotalPages();
+   }
 }
 ```
