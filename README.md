@@ -1,6 +1,13 @@
 # Pagination Stream
 Java 8 Lazy Stream For Paginated Result Set.
 
+
+Forked from https://github.com/mattsibs/pagination-stream (master) @ 2021-03-13
+
+## changes
+ * no dependency on the page object type - use a page extractor function to fetch a page, and items extractor to 
+   fetch a collection from the page
+
 Java Streams have a great api and provide the ability to lazily define loads an operations.
 Creating your own lazy loaded stream is easy with the `Spliterator<T>` interface.
 This repo is an example of using the interface for loading paginated data.
@@ -17,7 +24,7 @@ made generic in the future release so adapters can bridge the utility's requirem
 public class Main {
     
     public static void main(final String... args) {
-        ...
+        //...
         pagedStream(userRepository.pageFetcher(), 10, 100)
             .parallel()
             .map(HeavyLifting::aDifficultCalculation)

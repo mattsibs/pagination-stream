@@ -1,11 +1,12 @@
 package com.blog.stream.pagination;
 
-import org.springframework.data.domain.Page;
-
+import java.util.List;
 import java.util.Spliterator;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
-public class PreFetchPageSpliterator<T> implements Spliterator<T> {
+public class PreFetchPageSpliterator<P, T> implements Spliterator<T> {
 
     static final int PAGED_SPLITERATOR_CHARACTERISTICS = ORDERED | IMMUTABLE | SIZED | SUBSIZED | CONCURRENT;
 
@@ -13,30 +14,39 @@ public class PreFetchPageSpliterator<T> implements Spliterator<T> {
     private int totalNumberOfPages;
     private boolean hasPrefetched;
     private final int pageSize;
-    private final PageFetcher<T> pageFetcher;
-    private Page<T> preFetchedPage;
+    private final BiFunction<Integer, Integer, P> pageFetcher;
+    private final Function<P, List<T>> itemExtractor;
+    private final Function<P, Integer> totalPagesExtractor;
+
+    private List<T> preFetchedPage;
 
     PreFetchPageSpliterator(
             final int pageNumber,
             final int pageSize,
-            final PageFetcher<T> pageFetcher) {
+            final BiFunction<Integer, Integer, P> pageFetcher,
+            final Function<P, List<T>> itemExtractor,
+            final Function<P, Integer> totalPagesExtractor
+            ) {
         this.pageNumber = pageNumber;
         this.pageSize = pageSize;
         this.pageFetcher = pageFetcher;
+        this.itemExtractor = itemExtractor;
+        this.totalPagesExtractor = totalPagesExtractor;
     }
 
-    static <R> PreFetchPageSpliterator<R> create(final int pageSize, final PageFetcher<R> pageFetcher) {
-        return new PreFetchPageSpliterator<>(0, pageSize, pageFetcher);
+    static <P, R> PreFetchPageSpliterator<P, R> create(final int pageSize, final BiFunction<Integer, Integer, P> pageFetcher, Function<P, List<R>> itemFetcher, Function<P, Integer> totalPagesExtractor) {
+        return new PreFetchPageSpliterator<>(0, pageSize, pageFetcher, itemFetcher, totalPagesExtractor);
     }
 
     @Override
     public boolean tryAdvance(final Consumer<? super T> action) {
-        Page<T> page = pageFetcher.fetch(pageNumber, pageSize);
-        page.forEach(action);
+        P page = pageFetcher.apply(pageNumber, pageSize);
+        List<T> pageOfItems = itemExtractor.apply(page);
+        pageOfItems.forEach(action);
 
         //in parallel mode this section will always be run on the last page
         pageNumber++;
-        return !page.isLast();
+        return !pageOfItems.isEmpty();
     }
 
     @Override
@@ -54,7 +64,7 @@ public class PreFetchPageSpliterator<T> implements Spliterator<T> {
             return null;
         }
 
-        ChildPageSpliterator<T> childSpliterator = new ChildPageSpliterator<>(pageNumber, pageSize, pageFetcher);
+        ChildPageSpliterator<P, T> childSpliterator = new ChildPageSpliterator<>(pageNumber, pageSize, pageFetcher, itemExtractor);
         this.pageNumber++;
         return childSpliterator;
     }
@@ -65,7 +75,7 @@ public class PreFetchPageSpliterator<T> implements Spliterator<T> {
             prefetchPage();
         }
 
-        return pageSize * totalNumberOfPages;
+        return (long)pageSize * totalNumberOfPages;
     }
 
     @Override
@@ -74,30 +84,36 @@ public class PreFetchPageSpliterator<T> implements Spliterator<T> {
     }
 
     private void prefetchPage() {
-        preFetchedPage = pageFetcher.fetch(pageNumber, pageSize);
-        totalNumberOfPages = preFetchedPage.getTotalPages();
+        P page = pageFetcher.apply(pageNumber, pageSize);
+        preFetchedPage = itemExtractor.apply(page);
+        totalNumberOfPages = totalPagesExtractor.apply(page);
         hasPrefetched = true;
     }
 
-    static class ChildPageSpliterator<T> implements Spliterator<T> {
+    static class ChildPageSpliterator<P, T> implements Spliterator<T> {
 
         private final int pageNumber;
         private final int pageSize;
-        private final PageFetcher<T> pageFetcher;
+        private final BiFunction<Integer, Integer, P> pageFetcher;
+        private final Function<P, List<T>> itemExtractor;
 
         private ChildPageSpliterator(
                 final int pageNumber,
                 final int pageSize,
-                final PageFetcher<T> pageFetcher) {
+                final BiFunction<Integer, Integer, P> pageFetcher,
+                final Function<P, List<T>> itemExtractor
+        ) {
             this.pageNumber = pageNumber;
             this.pageSize = pageSize;
             this.pageFetcher = pageFetcher;
+            this.itemExtractor = itemExtractor;
         }
 
         @Override
         public boolean tryAdvance(final Consumer<? super T> action) {
-            Page<T> page = pageFetcher.fetch(pageNumber, pageSize);
-            page.forEach(action);
+            P page = pageFetcher.apply(pageNumber, pageSize);
+            List<T> pageOfItems = itemExtractor.apply(page);
+            pageOfItems.forEach(action);
             return false;
         }
 
@@ -120,10 +136,10 @@ public class PreFetchPageSpliterator<T> implements Spliterator<T> {
 
     static class PreFetchedChildPageSpliterator<T> implements Spliterator<T> {
 
-        private final Page<T> page;
+        private final List<T> page;
         private final int pageSize;
 
-        PreFetchedChildPageSpliterator(final Page<T> page, final int pageSize) {
+        PreFetchedChildPageSpliterator(final List<T> page, final int pageSize) {
             this.page = page;
             this.pageSize = pageSize;
         }

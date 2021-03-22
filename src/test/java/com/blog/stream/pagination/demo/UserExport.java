@@ -10,12 +10,12 @@ import java.time.LocalDate;
 
 @JsonPropertyOrder({"firstName", "lastName", "dateOfBirth"})
 public class UserExport {
-    private String firstName;
-    private String lastName;
+    private final String firstName;
+    private final String lastName;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     @JsonSerialize(using = LocalDateSerializer.class)
-    private LocalDate dateOfBirth;
+    private final LocalDate dateOfBirth;
 
     public UserExport(final User user) {
         this.firstName = user.getFirstName();

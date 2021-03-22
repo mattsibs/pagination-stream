@@ -30,20 +30,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ExampleExportIT {
 
     @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Autowired
     private UserRepository userRepository;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         userRepository.deleteAll();
     }
 
     @Test
     public void example_parallel_ExportingWithLazyPaginatedStreams() throws Exception {
         createTestUsers(100);
-        Stream<User> userStream = PaginationUtils.pagedStream(userRepository.pageFetcher(), 7, 100);
+        Stream<User> userStream = PaginationUtils.pagedStream(userRepository.pageFetcher(), userRepository.itemFetcher(), 7, 100);
 
         File file = temporaryFolder.newFile();
         try (FileOutputStream outputStream = new FileOutputStream(file)) {
@@ -59,9 +59,7 @@ public class ExampleExportIT {
                 .collect(toList());
 
         assertThat(export)
-                .hasSize(100);
-
-        assertThat(export)
+                .hasSize(100)
                 .containsOnlyOnce(
                         "AndroidInstance1,INDEX_1,2001-01-02",
                         "AndroidInstance87,INDEX_87,2001-03-29",
@@ -73,7 +71,7 @@ public class ExampleExportIT {
     @Test
     public void example_sequential_ExportingWithLazyPaginatedStreams() throws Exception {
         createTestUsers(100);
-        Stream<User> userStream = PaginationUtils.pagedStream(userRepository.pageFetcher(), 7, 100);
+        Stream<User> userStream = PaginationUtils.pagedStream(userRepository.pageFetcher(), userRepository.itemFetcher(), 7, 100);
 
         File file = temporaryFolder.newFile();
         try (FileOutputStream outputStream = new FileOutputStream(file)) {
@@ -89,9 +87,7 @@ public class ExampleExportIT {
                 .collect(toList());
 
         assertThat(export)
-                .hasSize(100);
-
-        assertThat(export)
+                .hasSize(100)
                 .startsWith(
                         "AndroidInstance0,INDEX_0,2001-01-01",
                         "AndroidInstance1,INDEX_1,2001-01-02",

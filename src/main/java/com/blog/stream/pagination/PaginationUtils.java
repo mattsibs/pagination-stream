@@ -1,5 +1,9 @@
 package com.blog.stream.pagination;
 
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -21,8 +25,8 @@ public final class PaginationUtils {
      * @param <T>      Generic type returned by page fetched
      * @return Stream of generic type T
      */
-    public static <T> Stream<T> pagedStream(final PageFetcher<T> fetcher, final int pageSize, final int count) {
-        PageSpliterator<T> spliterator = PageSpliterator.create(count, pageSize, fetcher);
+    public static <P, T> Stream<T> pagedStream(final BiFunction<Integer, Integer, P> fetcher, Function<P, List<T>> itemFetcher, final int pageSize, final int count) {
+        PageSpliterator<P, T> spliterator = PageSpliterator.create(count, pageSize, fetcher, itemFetcher);
         return StreamSupport.stream(spliterator, false);
     }
 
@@ -38,10 +42,10 @@ public final class PaginationUtils {
      * @param <T>           Generic type returned by page fetched
      * @return Stream of generic type T
      */
-    public static <T> Stream<T> pagedStream(
-            final PageFetcher<T> fetcher, final int pageSize, final Supplier<Integer> countSupplier) {
+    public static <P, T> Stream<T> pagedStream(
+            final BiFunction<Integer, Integer, P> fetcher, Function<P, List<T>> itemFetcher, final int pageSize, final IntSupplier countSupplier) {
 
-        Supplier<PageSpliterator<T>> spliterator = () -> PageSpliterator.create(countSupplier.get(), pageSize, fetcher);
+        Supplier<PageSpliterator<P, T>> spliterator = () -> PageSpliterator.create(countSupplier.getAsInt(), pageSize, fetcher, itemFetcher);
 
         return StreamSupport.stream(spliterator, PAGED_SPLITERATOR_CHARACTERISTICS, false);
     }
@@ -56,8 +60,8 @@ public final class PaginationUtils {
      * @param <T>      Generic type returned by page fetched
      * @return Stream of generic type T
      */
-    public static <T> Stream<T> prefetchPageStream(final PageFetcher<T> fetcher, final int pageSize) {
-        PreFetchPageSpliterator<T> spliterator = PreFetchPageSpliterator.create(pageSize, fetcher);
+    public static <P, T> Stream<T> prefetchPageStream(final BiFunction<Integer, Integer, P> fetcher, Function<P, List<T>> itemFetcher, Function<P, Integer> pageCountExtractor, final int pageSize) {
+        PreFetchPageSpliterator<P, T> spliterator = PreFetchPageSpliterator.create(pageSize, fetcher, itemFetcher, pageCountExtractor);
         return StreamSupport.stream(spliterator, false);
     }
 }
