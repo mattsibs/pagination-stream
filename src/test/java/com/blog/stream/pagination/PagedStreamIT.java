@@ -132,7 +132,8 @@ public class PagedStreamIT {
 
         Set<Thread> threads = Sets.newHashSet();
 
-        List<Long> streamedUserIds = PreFetchPageSpliterator.create(PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemFetcher(), userRepository.pageCountExtractor()).stream().sequential()
+        List<Long> streamedUserIds = PreFetchPageSpliterator.create(PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemFetcher(), userRepository.pageCountExtractor()).stream()
+                .sequential()
                 .peek(user -> threads.add(Thread.currentThread()))
                 .map(User::getId)
                 .collect(toList());

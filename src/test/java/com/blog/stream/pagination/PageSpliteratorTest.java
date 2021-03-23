@@ -19,7 +19,7 @@ public class PageSpliteratorTest {
 
         Spliterator<String> child = spliterator.trySplit();
 
-        soft.assertThat(((PageSpliterator.ChildPageSpliterator) child).getPageNumber())
+        soft.assertThat(((ChildPageSpliterator) child).getPageNumber())
                 .isEqualTo(3);
 
         soft.assertThat(spliterator.getPageNumber())
