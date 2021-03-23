@@ -13,14 +13,14 @@ public abstract class AbstractPageSpliterator<P, T> implements Spliterator<T> {
     static final int PAGED_SPLITERATOR_CHARACTERISTICS = ORDERED | IMMUTABLE | SIZED | SUBSIZED | CONCURRENT;
     private final int pageSize;
     private final BiFunction<Integer, Integer, P> pageFetcher;
-    private final Function<P, List<T>> itemFetcher;
+    private final Function<P, List<T>> itemExtractor;
     private final AtomicInteger pageNumber;
 
-    protected AbstractPageSpliterator(final int pageNumber, final int pageSize, final BiFunction<Integer, Integer, P> pageFetcher, final Function<P, List<T>> itemFetcher) {
+    protected AbstractPageSpliterator(final int pageNumber, final int pageSize, final BiFunction<Integer, Integer, P> pageFetcher, final Function<P, List<T>> itemExtractor) {
         this.pageNumber = new AtomicInteger(pageNumber);
         this.pageSize = pageSize;
         this.pageFetcher = pageFetcher;
-        this.itemFetcher = itemFetcher;
+        this.itemExtractor = itemExtractor;
     }
 
     /**
@@ -42,7 +42,7 @@ public abstract class AbstractPageSpliterator<P, T> implements Spliterator<T> {
     @Override
     public boolean tryAdvance(final Consumer<? super T> action) {
         P page = getPageFetcher().apply(getPageNumber(), getPageSize());
-        List<T> pageOfItems = getItemFetcher().apply(page);
+        List<T> pageOfItems = getItemExtractor().apply(page);
         pageOfItems.forEach(action);
         incrementPageNumber();
         return !isLastPage(pageOfItems);
@@ -65,8 +65,8 @@ public abstract class AbstractPageSpliterator<P, T> implements Spliterator<T> {
         return pageFetcher;
     }
 
-    protected Function<P, List<T>> getItemFetcher() {
-        return itemFetcher;
+    protected Function<P, List<T>> getItemExtractor() {
+        return itemExtractor;
     }
 
     protected boolean isLastPage(List<T> pageOfItems) {

@@ -23,7 +23,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
         };
     }
 
-    default Function<PageRequest, List<User>> itemFetcher() {
+    default Function<PageRequest, List<User>> itemExtractor() {
         return (pageable) -> findAll(pageable).get().collect(Collectors.toList());
     }
 

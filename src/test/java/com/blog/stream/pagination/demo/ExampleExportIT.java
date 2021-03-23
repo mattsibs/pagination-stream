@@ -50,7 +50,7 @@ public class ExampleExportIT {
         try (FileOutputStream outputStream = new FileOutputStream(file)) {
             Exporter exporter = Exporter.create(outputStream);
 
-            PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemFetcher()).stream()
+            PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemExtractor()).stream()
                     .parallel()
                     .map(UserExport::new)
                     .forEach(exporter::exportUser);
@@ -77,7 +77,7 @@ public class ExampleExportIT {
         try (FileOutputStream outputStream = new FileOutputStream(file)) {
             Exporter exporter = Exporter.create(outputStream);
 
-            PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemFetcher()).stream()
+            PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemExtractor()).stream()
                     .sequential()
                     .map(UserExport::new)
                     .forEach(exporter::exportUser);

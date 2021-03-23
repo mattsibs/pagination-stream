@@ -42,7 +42,7 @@ public class PagedStreamIT {
         List<User> testUsers = createTestUsers(ITEM_COUNT);
 
         Set<Thread> threads = Sets.newHashSet();
-        List<Long> streamedUserIds = PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemFetcher()).stream()
+        List<Long> streamedUserIds = PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemExtractor()).stream()
                 .parallel()
                 .peek(user -> threads.add(Thread.currentThread()))
                 .map(User::getId)
@@ -65,7 +65,7 @@ public class PagedStreamIT {
 
         Set<Thread> threads = Sets.newHashSet();
 
-        List<Long> streamedUserIds = PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemFetcher()).stream()
+        List<Long> streamedUserIds = PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemExtractor()).stream()
                 .sequential()
                 .peek(user -> threads.add(Thread.currentThread()))
                 .map(User::getId)
@@ -97,7 +97,7 @@ public class PagedStreamIT {
         assertThat(supplierCalledTimes.get())
                 .isZero();
 
-        PreFetchPageSpliterator.create(7, userRepository.pageFetcher(), userRepository.itemFetcher(), countSupplier).stream().count();
+        PreFetchPageSpliterator.create(7, userRepository.pageFetcher(), userRepository.itemExtractor(), countSupplier).stream().count();
 
         assertThat(supplierCalledTimes.get())
                 .isEqualTo(1);
@@ -109,7 +109,7 @@ public class PagedStreamIT {
         List<User> testUsers = createTestUsers(ITEM_COUNT);
 
         Set<Thread> threads = Sets.newHashSet();
-        List<Long> streamedUserIds = PreFetchPageSpliterator.create(PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemFetcher(), userRepository.pageCountExtractor()).stream()
+        List<Long> streamedUserIds = PreFetchPageSpliterator.create(PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemExtractor(), userRepository.pageCountExtractor()).stream()
                 .parallel()
                 .peek(user -> threads.add(Thread.currentThread()))
                 .map(User::getId)
@@ -132,7 +132,7 @@ public class PagedStreamIT {
 
         Set<Thread> threads = Sets.newHashSet();
 
-        List<Long> streamedUserIds = PreFetchPageSpliterator.create(PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemFetcher(), userRepository.pageCountExtractor()).stream()
+        List<Long> streamedUserIds = PreFetchPageSpliterator.create(PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemExtractor(), userRepository.pageCountExtractor()).stream()
                 .sequential()
                 .peek(user -> threads.add(Thread.currentThread()))
                 .map(User::getId)

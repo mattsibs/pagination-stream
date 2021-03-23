@@ -32,7 +32,7 @@ public class Main {
     
     public static void main(final String... args) {
         //...
-       PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, UserRepository.pageFetcher(), UserRepository.itemFetcher()).stream()
+       PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, UserRepository.pageFetcher(), UserRepository.itemExtractor()).stream()
             .parallel()
             .map(HeavyLifting::aDifficultCalculation)
             .forEach(notifier::notify);
@@ -54,7 +54,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
    }
 
    //fetch items from page response
-   default Function<PageRequest, List<User>> itemFetcher() {
+   default Function<PageRequest, List<User>> itemExtractor() {
       return (pageable) -> findAll(pageable).get().collect(Collectors.toList());
    }
 
