@@ -15,9 +15,10 @@ This repo is an example of using the interface for loading paginated data.
 
 ## Usage
 In order to use the utility, you need to define a few functionals:
-* a page extractor - how to load a paged result for a given offset and pagesize.
-* a itm extractor - how to get a list of items from a returned page
-* a page count extractor - how to compute the number of pages that can be fetched (required for best parallel execution)
+* a page fetcher - function to fetch a paged result for a given page and pagesize
+* a item extractor - function to get a list of items given a paged result object
+* a page count extractor - function to get the number of pages that can be fetched (required for best parallel execution)
+* a count - if known upfront or apply a limit to the result beyond number of pages
 
 Two classes can be used in sequence or parallel
 1. `PageSpliterator` - used if a good estimate of the size of the result is known
