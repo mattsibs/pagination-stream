@@ -48,7 +48,7 @@ public class PageSpliterator<P, T> implements Spliterator<T> {
     }
 
     /**
-     * construct a spliterator given
+     * construct a spliterator for sequential, or parallel if a good estimate of the count is known ahead of time
      * @param count total pages expected
      * @param pageSize size of page
      * @param pageFetcher function given page number returns a page object of type P
@@ -66,11 +66,11 @@ public class PageSpliterator<P, T> implements Spliterator<T> {
     }
 
     /**
-     * Construct a PreFetchPageSpliterator given
-     * @param pageSize paging size
-     * @param pageFetcher functional to fetch a page of type P given page and page size
-     * @param itemExtractor extract list of item type T from page object of type P
-     * @param totalPagesExtractor extract page count from page of type P
+     * Construct a PageSpliterator for parallel with prefetch to get more accurate page count (must have totalPagesExtractor)
+     * @param pageSize size of each page
+     * @param pageFetcher function to fetch a page of type P given both page and page size
+     * @param itemExtractor function to extract list of item type T from page object of type P
+     * @param totalPagesExtractor function to extract page count from page of type P
      * @param <P> page object type
      * @param <T> item type
      * @return a PreFetchPageSpliterator configured for prefetch
@@ -87,7 +87,7 @@ public class PageSpliterator<P, T> implements Spliterator<T> {
             return null;
         }
 
-        ChildPageSpliterator<P, T> childSpliterator = new ChildPageSpliterator<>(getPageNumber(), getPageSize(), getPageFetcher(), getItemExtractor());
+        ChildPageSpliterator<P, T> childSpliterator = new ChildPageSpliterator<>(getPageNumber(), getPageSize(), pageFetcher, itemExtractor);
         incrementPageNumber();
         return childSpliterator;
     }
@@ -109,8 +109,8 @@ public class PageSpliterator<P, T> implements Spliterator<T> {
             incrementPageNumber();
             return totalNumberOfPages != 1;
         } else {
-            P page = getPageFetcher().apply(getPageNumber(), getPageSize());
-            List<T> pageOfItems = getItemExtractor().apply(page);
+            P page = pageFetcher.apply(getPageNumber(), getPageSize());
+            List<T> pageOfItems = itemExtractor.apply(page);
             pageOfItems.forEach(action);
             incrementPageNumber();
             return !isLastPage(pageOfItems);
@@ -144,14 +144,6 @@ public class PageSpliterator<P, T> implements Spliterator<T> {
         return StreamSupport.stream(this, false);
     }
 
-    protected BiFunction<Integer, Integer, P> getPageFetcher() {
-        return pageFetcher;
-    }
-
-    protected Function<P, List<T>> getItemExtractor() {
-        return itemExtractor;
-    }
-
     protected boolean isLastPage(List<T> pageOfItems) {
         return pageOfItems.size() < getPageSize()
                 || (long) getPageNumber() * getPageSize() > estimateSize();
@@ -175,8 +167,8 @@ public class PageSpliterator<P, T> implements Spliterator<T> {
     }
 
     private void prefetchPage() {
-        P page = getPageFetcher().apply(getPageNumber(), getPageSize());
-        preFetchedPage = getItemExtractor().apply(page);
+        P page = pageFetcher.apply(getPageNumber(), getPageSize());
+        preFetchedPage = itemExtractor.apply(page);
         totalNumberOfPages = totalPagesExtractor.apply(page);
         hasPrefetched = true;
     }
