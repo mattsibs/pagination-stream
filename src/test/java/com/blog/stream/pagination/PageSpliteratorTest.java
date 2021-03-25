@@ -15,15 +15,28 @@ public class PageSpliteratorTest {
 
     @Test
     public void trySplit_ReturnsChildWithCurrentPageAndMovesOnToNextPage() {
-        PageSpliterator<Page<String>, String> spliterator = new PageSpliterator<>(3, 100, 10, null, null);
+        PageSpliterator<Page<String>, String> spliterator = PageSpliterator.create(3, 100, 10, null, null);
 
         Spliterator<String> child = spliterator.trySplit();
 
-        soft.assertThat(((ChildPageSpliterator) child).getPageNumber())
+        soft.assertThat(((PageSpliterator.ChildPageSpliterator) child).getPageNumber())
                 .isEqualTo(3);
 
         soft.assertThat(spliterator.getPageNumber())
                 .isEqualTo(4);
+
+    }
+
+    @Test
+    public void trySplit_ReturnsChildWithOnePageNoSplitAndNoMoveOnToNextPage() {
+        PageSpliterator<Page<String>, String> spliterator = PageSpliterator.create(0, 10, 10, null, null);
+
+        Spliterator<String> child = spliterator.trySplit();
+
+        soft.assertThat(child).isNull();
+
+        soft.assertThat(spliterator.getPageNumber())
+                .isEqualTo(0);
 
     }
 }

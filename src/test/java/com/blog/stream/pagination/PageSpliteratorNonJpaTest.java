@@ -35,7 +35,7 @@ public class PageSpliteratorNonJpaTest {
         PageSpliterator<PagedResult<TestObject>, TestObject> spliterator = PageSpliterator.create(3, 100, 10, null, null);
         Spliterator<TestObject> child = spliterator.trySplit();
 
-        Assert.assertEquals(3, ((ChildPageSpliterator<PagedResult<TestObject>, TestObject>) child).getPageNumber());
+        Assert.assertEquals(3, ((PageSpliterator.ChildPageSpliterator<PagedResult<TestObject>, TestObject>) child).getPageNumber());
         Assert.assertEquals(4, spliterator.getPageNumber());
 
     }
@@ -103,7 +103,7 @@ public class PageSpliteratorNonJpaTest {
         source = IntStream.range(0, totalResults).mapToObj(this::createTestObject).collect(Collectors.toList());
         PagedRepository<TestObject> repo = new PagedRepository<>(source);
 
-        PreFetchPageSpliterator<PagedResult<TestObject>, TestObject> spliterator = PreFetchPageSpliterator.create(pageSize, repo::fetchPage, PagedResult::getItems, PagedResult::getPages);
+        PageSpliterator<PagedResult<TestObject>, TestObject> spliterator = PageSpliterator.create(pageSize, repo::fetchPage, PagedResult::getItems, PagedResult::getPages);
         Set<Thread> threads = Sets.newHashSet();
 
         List<TestObject> allResults = spliterator.stream()
