@@ -92,22 +92,33 @@ public class PageSpliteratorNonJpaTest {
 
     @Test
     public void getPagedStreamParallelWithPrefetchShouldStreamThroughAllPagesUpToKnownThreads() {
-        doTest("count > page size", 100, 1000);
-        doTest("count = page size",100, 100);
-        doTest("count on less than page size",100, 99);
-        doTest("count < page size",100, 10);
-        doTest("count = 0",100, 0);
+
+        doTest("count > page size, parallel", 100, 1000, true);
+        doTest("count = page size, parallel",100, 100, true);
+        doTest("count on less than page size, parallel",100, 99, true);
+        doTest("count < page size, parallel",100, 10, true);
+        doTest("count = 0, parallel",100, 0, true);
+
+        doTest("count > page size, sequential", 100, 1000, false);
+        doTest("count = page size, sequential",100, 100,false);
+        doTest("count on less than page size, sequential",100, 99,false);
+        doTest("count < page size, sequential",100, 10, false);
+        doTest("count = 0, sequential",100, 0, false);
     }
 
-    private void doTest(String title, int pageSize, int totalResults) {
+    private void doTest(String title, int pageSize, int totalResults, boolean isParallel) {
         source = IntStream.range(0, totalResults).mapToObj(this::createTestObject).collect(Collectors.toList());
         PagedRepository<TestObject> repo = new PagedRepository<>(source);
 
-        PageSpliterator<PagedResult<TestObject>, TestObject> spliterator = PageSpliterator.create(pageSize, repo::fetchPage, PagedResult::getItems, PagedResult::getPages);
+        PageSpliterator<PagedResult<TestObject>, TestObject> spliterator = PageSpliterator.create(totalResults, pageSize, repo::fetchPage, PagedResult::getItems, PagedResult::getPages);
         Set<Thread> threads = Sets.newHashSet();
 
-        List<TestObject> allResults = spliterator.stream()
+        List<TestObject> allResults;
+        if (isParallel) allResults = spliterator.stream()
                 .parallel()
+                .peek(user -> threads.add(Thread.currentThread()))
+                .collect(Collectors.toList());
+        else allResults = spliterator.stream()
                 .peek(user -> threads.add(Thread.currentThread()))
                 .collect(Collectors.toList());
         System.out.println(title + " = Concurrency: " + threads.size());

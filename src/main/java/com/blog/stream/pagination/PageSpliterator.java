@@ -18,14 +18,13 @@ import java.util.stream.StreamSupport;
  * @param <T> type of object
  */
 public class PageSpliterator<P, T> implements Spliterator<T> {
-
     private final int pageSize;
     private final BiFunction<Integer, Integer, P> pageFetcher;
     private final Function<P, List<T>> itemExtractor;
     private final AtomicInteger pageNumber;
     private Integer totalNumberOfPages;
     private boolean hasPrefetched;
-    private final Integer count;
+    private final int count;
 
     private final Function<P, Integer> totalPagesExtractor;
 
@@ -33,7 +32,7 @@ public class PageSpliterator<P, T> implements Spliterator<T> {
 
     public PageSpliterator(
             final int pageNumber,
-            final Integer count,
+            final int count,
             final int pageSize,
             final BiFunction<Integer, Integer, P> pageFetcher,
             final Function<P, List<T>> itemExtractor,
@@ -75,18 +74,22 @@ public class PageSpliterator<P, T> implements Spliterator<T> {
      * @param <T> item type
      * @return a PreFetchPageSpliterator configured for prefetch
      */
-    public static <P, T> PageSpliterator<P, T> create(final int pageSize, final BiFunction<Integer, Integer, P> pageFetcher, Function<P, List<T>> itemExtractor, Function<P, Integer> totalPagesExtractor) {
-        return new PageSpliterator<>(0, null, pageSize, pageFetcher, itemExtractor, totalPagesExtractor);
+    public static <P, T> PageSpliterator<P, T> create(final int count, final int pageSize, final BiFunction<Integer, Integer, P> pageFetcher, Function<P, List<T>> itemExtractor, Function<P, Integer> totalPagesExtractor) {
+        return new PageSpliterator<>(0, count, pageSize, pageFetcher, itemExtractor, totalPagesExtractor);
     }
 
     @Override
     public Spliterator<T> trySplit() {
-        prefetchIfAllowed();
 
         if (isLastPageOrGreater()) {
             return null;
         }
 
+        if (preFetchedPage != null && getPageNumber() == 0) {
+            ChildPageSpliterator<List<T>, T> preFetchChildSpliterator = new ChildPageSpliterator<>(getPageNumber(), getPageSize(), (p, s) -> preFetchedPage, Function.identity());
+            incrementPageNumber();
+            return preFetchChildSpliterator;
+        }
         ChildPageSpliterator<P, T> childSpliterator = new ChildPageSpliterator<>(getPageNumber(), getPageSize(), pageFetcher, itemExtractor);
         incrementPageNumber();
         return childSpliterator;
@@ -94,27 +97,23 @@ public class PageSpliterator<P, T> implements Spliterator<T> {
 
     @Override
     public long estimateSize() {
-        prefetchIfAllowed();
+        if (totalPagesExtractor != null && !hasPrefetched) {
+            prefetchPage();
+        }
 
         if (totalNumberOfPages != null) {
-            return (long) getPageSize() * totalNumberOfPages;
+            return Math.min(getCount(), (long) getPageSize() * totalNumberOfPages);
         }
         return getCount();
     }
 
     @Override
     public boolean tryAdvance(final Consumer<? super T> action) {
-        if (preFetchedPage != null && isLastPage(preFetchedPage)) { // make sure the last iteration applies the prefetch page
-            preFetchedPage.forEach(action);
-            incrementPageNumber();
-            return totalNumberOfPages != 1;
-        } else {
-            P page = pageFetcher.apply(getPageNumber(), getPageSize());
-            List<T> pageOfItems = itemExtractor.apply(page);
-            pageOfItems.forEach(action);
-            incrementPageNumber();
-            return !isLastPage(pageOfItems);
-        }
+        P page = pageFetcher.apply(getPageNumber(), getPageSize());
+        List<T> pageOfItems = itemExtractor.apply(page);
+        pageOfItems.forEach(action);
+        incrementPageNumber();
+        return !isLastPage(pageOfItems);
     }
 
     @Override
@@ -141,22 +140,17 @@ public class PageSpliterator<P, T> implements Spliterator<T> {
      * @return Stream of generic type T
      */
     public Stream<T> stream() {
-        return StreamSupport.stream(this, false);
+        return StreamSupport.stream(this, false).limit(getCount());
     }
 
     protected boolean isLastPage(List<T> pageOfItems) {
+        if (totalNumberOfPages != null && getPageNumber() == totalNumberOfPages) return true;
         return pageOfItems.size() < getPageSize()
                 || (long) getPageNumber() * getPageSize() > estimateSize();
     }
 
     protected int incrementPageNumber() {
         return pageNumber.incrementAndGet();
-    }
-
-    private void prefetchIfAllowed() {
-        if (totalPagesExtractor != null && !hasPrefetched) {
-            prefetchPage();
-        }
     }
 
     private boolean isLastPageOrGreater() {
@@ -205,16 +199,6 @@ public class PageSpliterator<P, T> implements Spliterator<T> {
         @Override
         public int characteristics() {
             return ORDERED | IMMUTABLE | SIZED;
-        }
-
-        /**
-         * Create lazily loaded stream for paginated queries. Stream type returned is sequential by default
-         * performing pagedStream(...).parallel() will provided parallel stream.
-         *
-         * @return Stream of generic type T
-         */
-        public Stream<T> stream() {
-            return StreamSupport.stream(this, false);
         }
 
         /**

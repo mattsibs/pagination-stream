@@ -86,18 +86,19 @@ public class PagedStreamIT {
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     public void pagedStream_CountSupplier_NotCalledUntilTerminalMethod() {
-        createTestUsers(10);
+        int count = 10;
+        createTestUsers(count);
 
         AtomicInteger supplierCalledTimes = new AtomicInteger();
         Function<PageRequest, Integer> countSupplier = (p) -> {
             supplierCalledTimes.getAndIncrement();
-            return 10;
+            return count;
         };
 
         assertThat(supplierCalledTimes.get())
                 .isZero();
 
-        PageSpliterator.create(7, userRepository.pageFetcher(), userRepository.itemExtractor(), countSupplier).stream().count();
+        PageSpliterator.create(count, 7, userRepository.pageFetcher(), userRepository.itemExtractor(), countSupplier).stream().count();
 
         assertThat(supplierCalledTimes.get())
                 .isEqualTo(1);
@@ -109,7 +110,7 @@ public class PagedStreamIT {
         List<User> testUsers = createTestUsers(ITEM_COUNT);
 
         Set<Thread> threads = Sets.newHashSet();
-        List<Long> streamedUserIds = PageSpliterator.create(PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemExtractor(), userRepository.pageCountExtractor()).stream()
+        List<Long> streamedUserIds = PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemExtractor(), userRepository.pageCountExtractor()).stream()
                 .parallel()
                 .peek(user -> threads.add(Thread.currentThread()))
                 .map(User::getId)
@@ -132,7 +133,7 @@ public class PagedStreamIT {
 
         Set<Thread> threads = Sets.newHashSet();
 
-        List<Long> streamedUserIds = PageSpliterator.create(PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemExtractor(), userRepository.pageCountExtractor()).stream()
+        List<Long> streamedUserIds = PageSpliterator.create(ITEM_COUNT, PAGE_SIZE, userRepository.pageFetcher(), userRepository.itemExtractor(), userRepository.pageCountExtractor()).stream()
                 .sequential()
                 .peek(user -> threads.add(Thread.currentThread()))
                 .map(User::getId)
