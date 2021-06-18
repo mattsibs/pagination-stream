@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.util.List;
@@ -30,12 +31,12 @@ public class PagedStreamIT {
     private UserRepository userRepository;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         userRepository.deleteAll();
     }
 
     @Test
-    public void pagedStream_parallel_IteratesOverWholeResultSet() throws Exception {
+    public void pagedStream_parallel_IteratesOverWholeResultSet() {
         List<User> testUsers = createTestUsers(100);
 
         Stream<User> userStream = PaginationUtils.pagedStream(userRepository.pageFetcher(), 7, 100);
@@ -58,7 +59,7 @@ public class PagedStreamIT {
     }
 
     @Test
-    public void pagedStream_sequential_IteratesOverWholeResultSet() throws Exception {
+    public void pagedStream_sequential_IteratesOverWholeResultSet() {
         List<User> testUsers = createTestUsers(100);
 
         Stream<User> userStream = PaginationUtils.pagedStream(userRepository.pageFetcher(), 7, 100);
@@ -84,7 +85,7 @@ public class PagedStreamIT {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
-    public void pagedStream_CountSupplier_NotCalledUntilTerminalMethod() throws Exception {
+    public void pagedStream_CountSupplier_NotCalledUntilTerminalMethod() {
         createTestUsers(10);
 
         AtomicInteger supplierCalledTimes = new AtomicInteger();
@@ -106,7 +107,7 @@ public class PagedStreamIT {
 
 
     @Test
-    public void prefetchPageStream_parallel_IteratesOverWholeResultSet() throws Exception {
+    public void prefetchPageStream_parallel_IteratesOverWholeResultSet() {
         List<User> testUsers = createTestUsers(100);
 
         Stream<User> userStream = PaginationUtils.prefetchPageStream(userRepository.pageFetcher(), 7);
@@ -129,7 +130,7 @@ public class PagedStreamIT {
     }
 
     @Test
-    public void prefetchPageStream_sequential_IteratesOverWholeResultSet() throws Exception {
+    public void prefetchPageStream_sequential_IteratesOverWholeResultSet() {
         List<User> testUsers = createTestUsers(100);
 
         Stream<User> userStream = PaginationUtils.prefetchPageStream(userRepository.pageFetcher(), 7);
@@ -148,6 +149,54 @@ public class PagedStreamIT {
                         testUsers.stream()
                                 .map(User::getId)
                                 .collect(toList()));
+
+        assertThat(threads.size()).isEqualTo(1);
+
+    }
+
+    @Test
+    public void pageableStream_parallel_IteratesOverWholeResultSet() {
+        List<User> testUsers = createTestUsers(100);
+
+        Stream<User> userStream = PaginationUtils.pageableStream(userRepository::findAll, PageRequest.of(0, 7));
+
+        Set<Thread> threads = Sets.newHashSet();
+        List<Long> streamedUserIds = userStream.parallel()
+                                               .peek(user -> threads.add(Thread.currentThread()))
+                                               .map(User::getId)
+                                               .collect(toList());
+
+        System.out.println("Concurrency: " + threads.size());
+
+        assertThat(streamedUserIds)
+                .containsExactlyInAnyOrderElementsOf(
+                        testUsers.stream()
+                                 .map(User::getId)
+                                 .collect(toList()));
+
+        assertThat(threads.size()).isGreaterThan(1);
+    }
+
+    @Test
+    public void pageableStream_sequential_IteratesOverWholeResultSet() {
+        List<User> testUsers = createTestUsers(100);
+
+        Stream<User> userStream = PaginationUtils.pageableStream(userRepository::findAll, PageRequest.of(0, 7));
+
+        Set<Thread> threads = Sets.newHashSet();
+
+        List<Long> streamedUserIds = userStream.sequential()
+                                               .peek(user -> threads.add(Thread.currentThread()))
+                                               .map(User::getId)
+                                               .collect(toList());
+
+        System.out.println("Concurrency: " + threads.size());
+
+        assertThat(streamedUserIds)
+                .containsExactlyInAnyOrderElementsOf(
+                        testUsers.stream()
+                                 .map(User::getId)
+                                 .collect(toList()));
 
         assertThat(threads.size()).isEqualTo(1);
 

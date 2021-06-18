@@ -1,5 +1,9 @@
 package com.blog.stream.pagination;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -7,10 +11,6 @@ import java.util.stream.StreamSupport;
 import static com.blog.stream.pagination.PageSpliterator.PAGED_SPLITERATOR_CHARACTERISTICS;
 
 public final class PaginationUtils {
-    private PaginationUtils() {
-
-    }
-
     /**
      * Create lazily loaded stream for paginated queries. Stream type returned is sequential by default
      * performing pagedStream(...).parallel() will provided parallel stream.
@@ -46,7 +46,6 @@ public final class PaginationUtils {
         return StreamSupport.stream(spliterator, PAGED_SPLITERATOR_CHARACTERISTICS, false);
     }
 
-
     /**
      * Stream over paginated result set without having to know the size of the result set beforehand.
      * First page is obtained when attempting to split.
@@ -59,5 +58,23 @@ public final class PaginationUtils {
     public static <T> Stream<T> prefetchPageStream(final PageFetcher<T> fetcher, final int pageSize) {
         PreFetchPageSpliterator<T> spliterator = PreFetchPageSpliterator.create(pageSize, fetcher);
         return StreamSupport.stream(spliterator, false);
+    }
+
+    /**
+     * Stream over paginated result set without having to know the size of the result set beforehand.
+     * First page is obtained when attempting to split.
+     *
+     * @param fetcher  Interface for retrieving pages
+     * @param pageable Pageable to use for the queries
+     * @param <T>      Generic type returned by page fetched
+     * @return Stream of generic type T
+     */
+    public static <T> Stream<T> pageableStream(final Function<Pageable, Page<T>> fetcher, final Pageable pageable) {
+        PageableSpliterator<T> spliterator = PageableSpliterator.create(pageable, fetcher);
+        return StreamSupport.stream(spliterator, false);
+    }
+
+    private PaginationUtils() {
+
     }
 }
