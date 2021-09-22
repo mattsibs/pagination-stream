@@ -15,12 +15,12 @@ public class PageSpliteratorTest {
     public JUnitSoftAssertions soft = new JUnitSoftAssertions();
 
     @Test
-    public void trySplit_ReturnsChildWithCurrentPageAndMovesOnToNextPage() throws Exception {
+    public void trySplit_ReturnsChildWithCurrentPageAndMovesOnToNextPage() {
         PageSpliterator<String> spliterator = new PageSpliterator<>(3, 100, 10, null);
 
         Spliterator<String> child = spliterator.trySplit();
 
-        soft.assertThat(((PageSpliterator.ChildPageSpliterator) child).getPageNumber())
+        soft.assertThat(((PageSpliterator.ChildPageSpliterator<String>) child).getPageNumber())
                 .isEqualTo(3);
 
         soft.assertThat(spliterator.getPageNumber())
